@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Crypto Chart Analyzer with Multi-Timeframe Confluence Signals</title>
+    <title>Enhanced Crypto Chart Analyzer with Multi-Timeframe Confluence Signals (Local Time)</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/lightweight-charts@4.0.0/dist/lightweight-charts.standalone.production.js"></script>
@@ -32,7 +32,7 @@
             border-radius: 2px;
         }
         .alert-container {
-            max-height: 300px;
+            max-height: 350px;
             overflow-y: auto;
         }
         .signal-indicator {
@@ -53,6 +53,10 @@
         .short-signal {
             border-left: 4px solid #ef4444;
             background: rgba(239, 68, 68, 0.1);
+        }
+        .timeframe-alert {
+            border-left: 4px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
         }
         /* PDF optimization */
         body {
@@ -77,6 +81,16 @@
         .tf-oversold { background: #dcfce7; color: #166534; }
         .tf-overbought { background: #fecaca; color: #991b1b; }
         .tf-neutral { background: #f3f4f6; color: #6b7280; }
+        .alert-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .alert-new { background: #ef4444; color: white; }
+        .alert-stored { background: #6b7280; color: white; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -85,7 +99,7 @@
             <div class="flex items-center justify-between mb-6">
                 <h1 class="text-3xl font-bold text-gray-800">
                     <i class="fas fa-chart-line text-blue-600 mr-2"></i>
-                    Multi-Timeframe Confluence Analyzer
+                    Multi-Timeframe Confluence Analyzer (Local Time)
                 </h1>
                 <div class="flex items-center space-x-4">
                     <select id="crypto-selector" class="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
@@ -98,6 +112,9 @@
                         <option value="LINKUSDT">Chainlink (LINK/USDT)</option>
                         <option value="UNIUSDT">Uniswap (UNI/USDT)</option>
                     </select>
+                    <button id="clear-alerts-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-trash mr-1"></i>Clear Alerts
+                    </button>
                 </div>
             </div>
 
@@ -222,7 +239,7 @@
             <div class="space-y-4 mb-6">
                 <!-- Price Chart -->
                 <div class="relative">
-                    <h3 class="text-lg font-semibold mb-2">Price Chart</h3>
+                    <h3 class="text-lg font-semibold mb-2">Price Chart (Local Time)</h3>
                     <div id="price-chart-container" class="w-full border rounded-lg" style="height: 400px;">
                         <button id="restore-price-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all">
                             <i class="fas fa-home mr-1"></i>Reset View
@@ -232,7 +249,7 @@
 
                 <!-- Stochastic Chart -->
                 <div class="relative">
-                    <h3 class="text-lg font-semibold mb-2">Stochastic Oscillator</h3>
+                    <h3 class="text-lg font-semibold mb-2">Stochastic Oscillator with Background Zones (Local Time)</h3>
                     <div id="stochastic-chart-container" class="w-full border rounded-lg" style="height: 250px;">
                         <button id="restore-stochastic-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all">
                             <i class="fas fa-home mr-1"></i>Reset View
@@ -312,18 +329,19 @@
                     </div>
                 </div>
 
-                <!-- Alerts Panel -->
+                <!-- Enhanced Alerts Panel -->
                 <div class="bg-white border rounded-lg p-4">
                     <h3 class="text-xl font-semibold mb-4 flex items-center">
                         <i class="fas fa-bell text-red-600 mr-2"></i>
                         Live Confluence Alerts
+                        <span id="stored-alert-count" class="alert-badge alert-stored ml-2">0 Stored</span>
                     </h3>
                     <div id="alerts-container" class="alert-container space-y-2">
                         <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
                             <div class="flex items-center">
                                 <i class="fas fa-info-circle text-blue-500 mr-2"></i>
                                 <span class="text-sm">
-                                    [<span id="initial-timestamp"></span>] Multi-timeframe confluence system initialized...
+                                    [<span id="initial-timestamp"></span>] Multi-timeframe confluence system with alert storage initialized (Local Time)...
                                 </span>
                             </div>
                         </div>
@@ -336,6 +354,7 @@
                             <div>Active Confluence Level: <span id="current-confluence-level" class="font-bold">0</span></div>
                             <div>Last Signal: <span id="last-signal-type" class="font-bold">None</span></div>
                             <div>Signal Strength: <span id="signal-strength" class="font-bold">Weak</span></div>
+                            <div>Alerts Stored: <span id="alert-count-display" class="font-bold">0/10</span></div>
                         </div>
                     </div>
                 </div>
@@ -368,6 +387,7 @@
         let stochasticChart;
         let candleSeries;
         let stochasticSeries = {};
+        let backgroundSeries = {};
         let currentTimeframe = '1h';
         let currentSymbol = 'BTCUSDT';
         let updateInterval;
@@ -383,6 +403,10 @@
             '30m': { stochastics: {}, lastUpdate: 0 },
             '1h': { stochastics: {}, lastUpdate: 0 }
         };
+        
+        // Alert storage
+        let alertHistory = [];
+        let timeframeAlertStates = {};
         
         // EMA series
         let emaSeries = {
@@ -404,6 +428,68 @@
             'full': { color: '#8B5CF6', label: 'Full (60,3,1)' }
         };
 
+        // Timezone handling function
+        function convertToLocalTime(utcTimestamp) {
+            // The timestamp from Binance is already in UTC milliseconds
+            // Convert to local time by creating a new Date object
+            // The lightweight-charts library expects Unix timestamp in seconds
+            return Math.floor(utcTimestamp / 1000);
+        }
+
+        // Local Storage Functions
+        function loadStoredAlerts() {
+            try {
+                const stored = localStorage.getItem('cryptoAnalyzerAlerts');
+                if (stored) {
+                    alertHistory = JSON.parse(stored);
+                    updateAlertCount();
+                    displayStoredAlerts();
+                }
+            } catch (error) {
+                console.error('Error loading stored alerts:', error);
+                alertHistory = [];
+            }
+        }
+
+        function saveAlert(alert) {
+            alertHistory.unshift(alert); // Add to beginning
+            if (alertHistory.length > 10) {
+                alertHistory = alertHistory.slice(0, 10); // Keep only last 10
+            }
+            
+            try {
+                localStorage.setItem('cryptoAnalyzerAlerts', JSON.stringify(alertHistory));
+                updateAlertCount();
+            } catch (error) {
+                console.error('Error saving alert:', error);
+            }
+        }
+
+        function clearStoredAlerts() {
+            alertHistory = [];
+            localStorage.removeItem('cryptoAnalyzerAlerts');
+            updateAlertCount();
+            
+            // Clear alert display except system message
+            const alertsContainer = document.getElementById('alerts-container');
+            while (alertsContainer.children.length > 1) {
+                alertsContainer.removeChild(alertsContainer.children[1]);
+            }
+        }
+
+        function updateAlertCount() {
+            const count = alertHistory.length;
+            document.getElementById('stored-alert-count').textContent = `${count} Stored`;
+            document.getElementById('alert-count-display').textContent = `${count}/10`;
+        }
+
+        function displayStoredAlerts() {
+            // Display stored alerts in the UI (most recent first)
+            alertHistory.forEach(alert => {
+                addAlertToUI(alert.message, alert.type, alert.signalType, alert.timestamp, true);
+            });
+        }
+
         function initCharts() {
             const priceContainer = document.getElementById('price-chart-container');
             const stochasticContainer = document.getElementById('stochastic-chart-container');
@@ -412,7 +498,7 @@
             priceContainer.innerHTML = '<button id="restore-price-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all"><i class="fas fa-home mr-1"></i>Reset View</button>';
             stochasticContainer.innerHTML = '<button id="restore-stochastic-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all"><i class="fas fa-home mr-1"></i>Reset View</button>';
 
-            // Create price chart
+            // Create price chart with local time configuration
             priceChart = LightweightCharts.createChart(priceContainer, {
                 layout: {
                     backgroundColor: '#ffffff',
@@ -429,11 +515,26 @@
                     barSpacing: 6,
                     fixLeftEdge: false,
                     fixRightEdge: true,
-                    lockVisibleTimeRangeOnResize: true
+                    lockVisibleTimeRangeOnResize: true,
+                    timeVisible: true,
+                    secondsVisible: true,
+                    shiftVisibleRangeOnNewBar: true
+                },
+                localization: {
+                    timeFormatter: (time) => {
+                        // Convert timestamp to local time string
+                        const date = new Date(time * 1000);
+                        return date.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            month: '2-digit',
+                            day: '2-digit'
+                        });
+                    }
                 }
             });
 
-            // Create stochastic chart
+            // Create stochastic chart with local time configuration
             stochasticChart = LightweightCharts.createChart(stochasticContainer, {
                 layout: {
                     backgroundColor: '#ffffff',
@@ -457,12 +558,30 @@
                     barSpacing: 6,
                     fixLeftEdge: false,
                     fixRightEdge: true,
-                    lockVisibleTimeRangeOnResize: true
+                    lockVisibleTimeRangeOnResize: true,
+                    timeVisible: true,
+                    secondsVisible: true,
+                    shiftVisibleRangeOnNewBar: true
+                },
+                localization: {
+                    timeFormatter: (time) => {
+                        // Convert timestamp to local time string
+                        const date = new Date(time * 1000);
+                        return date.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            month: '2-digit',
+                            day: '2-digit'
+                        });
+                    }
                 }
             });
 
             // Add price series to price chart
             candleSeries = priceChart.addCandlestickSeries();
+            
+            // Add background areas to stochastic chart first (so they appear behind lines)
+            createStochasticBackgrounds();
             
             // Initialize stochastic series in stochastic chart
             Object.keys(stochColors).forEach(key => {
@@ -474,26 +593,29 @@
 
             // Add reference lines for stochastic (90/15)
             const upperLine = stochasticChart.addLineSeries({
-                color: 'rgba(255, 0, 0, 0.3)',
-                lineWidth: 1,
-                lineStyle: 2
+                color: '#FF0000',
+                lineWidth: 2,
+                lineStyle: 2,
+                title: 'Overbought (90)'
             });
             
             const lowerLine = stochasticChart.addLineSeries({
-                color: 'rgba(0, 255, 0, 0.3)',
-                lineWidth: 1,
-                lineStyle: 2
+                color: '#00FF00',
+                lineWidth: 2,
+                lineStyle: 2,
+                title: 'Oversold (15)'
             });
 
-            // Set reference line data
+            // Set reference line data using local time
             const now = Math.floor(Date.now() / 1000);
+            const futureTime = now + 86400 * 30; // 30 days in future
             upperLine.setData([
-                { time: now, value: 90 },
-                { time: now + 86400, value: 90 }
+                { time: now - 86400 * 30, value: 90 },
+                { time: futureTime, value: 90 }
             ]);
             lowerLine.setData([
-                { time: now, value: 15 },
-                { time: now + 86400, value: 15 }
+                { time: now - 86400 * 30, value: 15 },
+                { time: futureTime, value: 15 }
             ]);
 
             // Sync time scales
@@ -511,6 +633,9 @@
                 }
             });
 
+            // Load stored alerts
+            loadStoredAlerts();
+            
             loadMultitimeframeData();
             setupAutoUpdate();
             updateStochasticLegend();
@@ -524,7 +649,59 @@
                 stochasticChart.timeScale().fitContent();
             });
             
-            document.getElementById('initial-timestamp').textContent = new Date().toLocaleTimeString();
+            document.getElementById('initial-timestamp').textContent = new Date().toLocaleString();
+        }
+        
+        function createStochasticBackgrounds() {
+            // Create three area series for background colors
+            
+            // Overbought area (90-100) - Red background
+            backgroundSeries.overbought = stochasticChart.addAreaSeries({
+                topColor: 'rgba(255, 0, 0, 0.1)',
+                bottomColor: 'rgba(255, 0, 0, 0.05)',
+                lineColor: 'transparent',
+                lineWidth: 0
+            });
+            
+            // Neutral area (15-90) - Light gray background  
+            backgroundSeries.neutral = stochasticChart.addAreaSeries({
+                topColor: 'rgba(128, 128, 128, 0.05)',
+                bottomColor: 'rgba(128, 128, 128, 0.02)',
+                lineColor: 'transparent',
+                lineWidth: 0
+            });
+            
+            // Oversold area (0-15) - Green background
+            backgroundSeries.oversold = stochasticChart.addAreaSeries({
+                topColor: 'rgba(0, 255, 0, 0.1)',
+                bottomColor: 'rgba(0, 255, 0, 0.05)',
+                lineColor: 'transparent',
+                lineWidth: 0
+            });
+        }
+        
+        function updateStochasticBackgrounds(timeData) {
+            if (!timeData || timeData.length === 0) return;
+            
+            const now = Math.floor(Date.now() / 1000);
+            const pastTime = now - 86400 * 30;
+            const futureTime = now + 86400 * 30;
+            
+            // Set static background areas
+            backgroundSeries.overbought.setData([
+                { time: pastTime, value: 100 },
+                { time: futureTime, value: 90 }
+            ]);
+            
+            backgroundSeries.neutral.setData([
+                { time: pastTime, value: 90 },
+                { time: futureTime, value: 15 }
+            ]);
+            
+            backgroundSeries.oversold.setData([
+                { time: pastTime, value: 15 },
+                { time: futureTime, value: 0 }
+            ]);
         }
         
         function updateStochasticLegend() {
@@ -542,6 +719,18 @@
                     legend.appendChild(item);
                 }
             });
+            
+            // Add background zone legend
+            const zoneInfo = document.createElement('div');
+            zoneInfo.innerHTML = `
+                <div style="margin-top: 8px; margin-bottom: 3px; font-weight: bold; font-size: 11px;">Background Zones:</div>
+                <div style="font-size: 10px;">
+                    <div style="margin: 2px 0;"><span style="background: rgba(255,0,0,0.2); padding: 1px 4px; margin-right: 4px;">&nbsp;</span>Overbought (≥90)</div>
+                    <div style="margin: 2px 0;"><span style="background: rgba(128,128,128,0.2); padding: 1px 4px; margin-right: 4px;">&nbsp;</span>Neutral (15-90)</div>
+                    <div style="margin: 2px 0;"><span style="background: rgba(0,255,0,0.2); padding: 1px 4px; margin-right: 4px;">&nbsp;</span>Oversold (≤15)</div>
+                </div>
+            `;
+            legend.appendChild(zoneInfo);
         }
 
         // Heikin Ashi calculation
@@ -663,7 +852,7 @@
                         if (!candle2) break; // Ensure we have a pair
 
                         candles.push({
-                            time: candle1[0] / 1000, // Use the time of the first candle
+                            time: convertToLocalTime(candle1[0]), // Convert to local time
                             open: parseFloat(candle1[1]),
                             high: Math.max(parseFloat(candle1[2]), parseFloat(candle2[2])),
                             low: Math.min(parseFloat(candle1[3]), parseFloat(candle2[3])),
@@ -678,7 +867,7 @@
                     const data = await response.json();
 
                     candles = data.map(d => ({
-                        time: d[0] / 1000,
+                        time: convertToLocalTime(d[0]), // Convert to local time
                         open: parseFloat(d[1]),
                         high: parseFloat(d[2]),
                         low: parseFloat(d[3]),
@@ -702,11 +891,49 @@
                 };
 
                 updateTimeframeStatus(timeframe, stochastics);
+                checkTimeframeAlerts(timeframe, stochastics);
                 
                 return { candles, stochastics };
             } catch (error) {
                 console.error(`Error loading ${timeframe} data:`, error);
                 return null;
+            }
+        }
+        
+        function checkTimeframeAlerts(timeframe, stochastics) {
+            const keys = ['fast', 'medium', 'slow', 'full'];
+            const latest = {};
+            
+            // Get latest values for all stochastics
+            keys.forEach(key => {
+                const stochData = stochastics[key];
+                latest[key] = stochData.length > 0 ? stochData[stochData.length - 1].d : null;
+            });
+            
+            // Check if all are valid numbers
+            const allValid = Object.values(latest).every(val => val !== null && !isNaN(val));
+            if (!allValid) return;
+            
+            // Check for oversold condition (all <= 15)
+            const allOversold = Object.values(latest).every(val => val <= 15);
+            // Check for overbought condition (all >= 90)  
+            const allOverbought = Object.values(latest).every(val => val >= 90);
+            
+            const alertKey = `${currentSymbol}_${timeframe}`;
+            const previousState = timeframeAlertStates[alertKey];
+            
+            if (allOversold && previousState !== 'oversold') {
+                timeframeAlertStates[alertKey] = 'oversold';
+                const valuesStr = keys.map(key => `${key}: ${Math.round(latest[key])}`).join(', ');
+                const message = `🟢 ${timeframe.toUpperCase()} OVERSOLD ALERT: All stochastics ≤15 (${valuesStr}) - Potential LONG setup for ${currentSymbol}`;
+                addAlert(message, 'bullish', 'timeframe');
+            } else if (allOverbought && previousState !== 'overbought') {
+                timeframeAlertStates[alertKey] = 'overbought';
+                const valuesStr = keys.map(key => `${key}: ${Math.round(latest[key])}`).join(', ');
+                const message = `🔴 ${timeframe.toUpperCase()} OVERBOUGHT ALERT: All stochastics ≥90 (${valuesStr}) - Potential SHORT setup for ${currentSymbol}`;
+                addAlert(message, 'bearish', 'timeframe');
+            } else if (!allOversold && !allOverbought && previousState) {
+                timeframeAlertStates[alertKey] = null; // Reset state when exiting extreme zones
             }
         }
         
@@ -761,6 +988,9 @@
                     }
                 });
                 
+                // Update background areas
+                updateStochasticBackgrounds(displayData.stochastics.medium);
+                
                 // Calculate and display EMAs
                 updateEMAs();
             }
@@ -801,10 +1031,27 @@
         
         function addAlert(message, type, signalType = '') {
             const now = Date.now();
-            if (now - lastAlertTime < 10000 && type !== 'info') return; // Reduced to 10 seconds
+            if (now - lastAlertTime < 5000 && type !== 'info') return; // 5 second cooldown
             
             lastAlertTime = now;
             
+            const alert = {
+                timestamp: new Date().toLocaleTimeString(),
+                message: message,
+                type: type,
+                signalType: signalType,
+                symbol: currentSymbol,
+                time: now
+            };
+            
+            // Save to localStorage
+            saveAlert(alert);
+            
+            // Add to UI
+            addAlertToUI(message, type, signalType, alert.timestamp, false);
+        }
+        
+        function addAlertToUI(message, type, signalType, timestamp, isStored) {
             const alertsContainer = document.getElementById('alerts-container');
             const alertDiv = document.createElement('div');
             
@@ -813,11 +1060,23 @@
             
             switch(type) {
                 case 'bullish':
-                    alertClass += signalType === 'confluence' ? 'confluence-signal' : 'long-signal';
+                    if (signalType === 'confluence') {
+                        alertClass += 'confluence-signal';
+                    } else if (signalType === 'timeframe') {
+                        alertClass += 'timeframe-alert';
+                    } else {
+                        alertClass += 'long-signal';
+                    }
                     iconClass = 'fas fa-arrow-up text-green-500 ';
                     break;
                 case 'bearish':
-                    alertClass += signalType === 'confluence' ? 'confluence-signal' : 'short-signal';
+                    if (signalType === 'confluence') {
+                        alertClass += 'confluence-signal';
+                    } else if (signalType === 'timeframe') {
+                        alertClass += 'timeframe-alert';
+                    } else {
+                        alertClass += 'short-signal';
+                    }
                     iconClass = 'fas fa-arrow-down text-red-500 ';
                     break;
                 default:
@@ -827,20 +1086,23 @@
             
             alertDiv.className = alertClass;
             
-            const dateStr = new Date().toLocaleTimeString();
+            const badgeClass = isStored ? 'alert-stored' : 'alert-new';
+            const badgeText = isStored ? 'STORED' : 'NEW';
+            
             alertDiv.innerHTML = `
                 <div class="flex items-center">
                     <i class="${iconClass}mr-2"></i>
                     <span class="text-sm font-medium">
-                        [${dateStr}] ${message}
+                        [${timestamp}] ${message}
                     </span>
+                    <span class="alert-badge ${badgeClass}">${badgeText}</span>
                 </div>
             `;
             
             alertsContainer.insertBefore(alertDiv, alertsContainer.children[1]);
             
-            // Keep only the last 15 alerts
-            while (alertsContainer.children.length > 16) {
+            // Keep only the last 20 alerts in UI
+            while (alertsContainer.children.length > 21) {
                 alertsContainer.removeChild(alertsContainer.lastChild);
             }
         }
@@ -916,7 +1178,7 @@
                     const direction = isOversoldConfluence ? 'LONG' : 'SHORT';
                     const condition = isOversoldConfluence ? 'oversold (≤15)' : 'overbought (≥90)';
                     addAlert(
-                        `CONFLUENCE LEVEL ${level} ${direction}: All stochastic bands ${condition} across ${group.join(', ')} timeframes - Strong ${direction.toLowerCase()} signal!`,
+                        `⚡ CONFLUENCE LEVEL ${level} ${direction}: All stochastic bands ${condition} across ${group.join(', ')} timeframes - Strong ${direction.toLowerCase()} signal for ${currentSymbol}!`,
                         isOversoldConfluence ? 'bullish' : 'bearish',
                         'confluence'
                     );
@@ -1020,6 +1282,13 @@
                     }
                 }
             });
+
+            // Clear alerts button
+            document.getElementById('clear-alerts-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear all stored alerts?')) {
+                    clearStoredAlerts();
+                }
+            });
         }
 
         function setupAutoUpdate() {
@@ -1050,6 +1319,8 @@
 
         document.getElementById('crypto-selector').addEventListener('change', function() {
             currentSymbol = this.value;
+            // Reset timeframe alert states for new symbol
+            timeframeAlertStates = {};
             initCharts();
         });
 
