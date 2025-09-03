@@ -3,106 +3,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Crypto Chart Analyzer with Multi-Timeframe Confluence Signals (Local Time)</title>
+    <title>Enhanced Crypto Chart Analyzer</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/lightweight-charts@4.0.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        .stochastic-legend {
-            position: absolute;
-            right: 20px;
-            bottom: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            z-index: 0;
-            max-width: 200px;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .stochastic-legend-item {
-            display: flex;
-            align-items: center;
-            margin: 3px 0;
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
-        .stochastic-legend-color {
-            width: 12px;
-            height: 12px;
-            margin-right: 6px;
-            border-radius: 2px;
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
+        
         .alert-container {
             max-height: 350px;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.6) transparent;
         }
+        
+        .alert-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .alert-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .alert-container::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.6);
+            border-radius: 3px;
+        }
+        
         .signal-indicator {
             animation: pulse 2s infinite;
         }
+        
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
         }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.6); }
+            50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.9), 0 0 35px rgba(139, 92, 246, 0.7); }
+        }
+        
         .confluence-signal {
-            border-left: 4px solid #8b5cf6;
-            background: rgba(139, 92, 246, 0.1);
+            border-left: 5px solid #8b5cf6;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
+            animation: glow 3s ease-in-out infinite;
+            color: #ffffff !important;
+            font-weight: 600;
         }
+        
         .long-signal {
-            border-left: 4px solid #10b981;
-            background: rgba(16, 185, 129, 0.1);
+            border-left: 5px solid #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+            color: #ffffff !important;
+            font-weight: 600;
         }
+        
         .short-signal {
-            border-left: 4px solid #ef4444;
-            background: rgba(239, 68, 68, 0.1);
+            border-left: 5px solid #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
+            color: #ffffff !important;
+            font-weight: 600;
         }
+        
         .timeframe-alert {
-            border-left: 4px solid #f59e0b;
-            background: rgba(245, 158, 11, 0.1);
+            border-left: 5px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
+            color: #ffffff !important;
+            font-weight: 600;
         }
-        /* PDF optimization */
-        body {
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-        }
-        @media print {
-            body { margin: 0; }
-            .container { max-width: none; margin: 0; padding: 10px; }
-            .alert-container { max-height: none; overflow: visible; }
-        }
+        
         .timeframe-status {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin: 1px;
+            font-size: 10px;
+            padding: 5px 9px;
+            border-radius: 8px;
+            margin: 2px;
             display: inline-block;
-            min-width: 35px;
+            min-width: 42px;
             text-align: center;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
         }
-        .tf-loading { background: #d1d5db; color: #374151; }
-        .tf-oversold { background: #dcfce7; color: #166534; }
-        .tf-overbought { background: #fecaca; color: #991b1b; }
-        .tf-neutral { background: #f3f4f6; color: #6b7280; }
+        
+        .tf-loading { 
+            background: linear-gradient(135deg, #6b7280, #4b5563); 
+            color: #ffffff; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .tf-oversold { 
+            background: linear-gradient(135deg, #10b981, #059669); 
+            color: #ffffff;
+            animation: pulse 2s infinite;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .tf-overbought { 
+            background: linear-gradient(135deg, #ef4444, #dc2626); 
+            color: #ffffff;
+            animation: pulse 2s infinite;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .tf-neutral { 
+            background: linear-gradient(135deg, #64748b, #475569); 
+            color: #ffffff; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
         .alert-badge {
             display: inline-block;
-            padding: 2px 6px;
-            border-radius: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
             font-size: 10px;
             font-weight: bold;
-            margin-left: 8px;
+            margin-left: 10px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
-        .alert-new { background: #ef4444; color: white; }
-        .alert-stored { background: #6b7280; color: white; }
+        
+        .alert-new { 
+            background: linear-gradient(135deg, #ef4444, #dc2626); 
+            color: white; 
+            animation: pulse 2s infinite;
+        }
+        
+        .alert-stored { 
+            background: linear-gradient(135deg, #6b7280, #4b5563); 
+            color: white; 
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.5);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px 0 rgba(102, 126, 234, 0.7);
+        }
+        
+        .btn-gradient:active {
+            transform: translateY(0);
+        }
+        
+        .card-gradient {
+            background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.15) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .live-indicator {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 15px #10b981;
+        }
+        
+        .text-high-contrast {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-weight: 600;
+        }
+        
+        .text-card-contrast {
+            color: #1f2937 !important;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+            font-weight: 600;
+        }
+        
+        .update-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 18px;
+            background: rgba(16, 185, 129, 0.95);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .update-indicator.show {
+            opacity: 1;
+        }
+        
+        .chart-header {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.25);
+        }
+        
+        .enhanced-btn {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .alert-text {
+            color: #ffffff !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+            font-weight: 600;
+        }
+
+        /* PDF optimization */
+        .container {
+            max-width: none !important;
+            width: 100% !important;
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .glass-morphism {
+                background: rgba(255, 255, 255, 0.95) !important;
+                border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            }
+            
+            .text-high-contrast {
+                color: #000000 !important;
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto p-4">
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">
-                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
-                    Multi-Timeframe Confluence Analyzer (Local Time)
+<body class="min-h-screen">
+    <div class="update-indicator" id="update-indicator">
+        <i class="fas fa-sync-alt mr-2"></i>Updating data...
+    </div>
+    
+    <div class="container mx-auto p-2 sm:p-4 lg:p-6">
+        <div class="glass-morphism rounded-2xl shadow-2xl p-4 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
+                <h1 class="text-2xl sm:text-3xl font-bold text-high-contrast flex items-center">
+                    <div class="live-indicator mr-3"></div>
+                    <i class="fas fa-chart-line text-yellow-300 mr-2"></i>
+                    Enhanced Crypto Analyzer
                 </h1>
-                <div class="flex items-center space-x-4">
-                    <select id="crypto-selector" class="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <select id="crypto-selector" class="w-full sm:w-auto glass-morphism text-high-contrast border-0 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-400 appearance-none bg-opacity-20 enhanced-btn">
                         <option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
                         <option value="ETHUSDT">Ethereum (ETH/USDT)</option>
                         <option value="SOLUSDT">Solana (SOL/USDT)</option>
@@ -112,31 +292,36 @@
                         <option value="LINKUSDT">Chainlink (LINK/USDT)</option>
                         <option value="UNIUSDT">Uniswap (UNI/USDT)</option>
                     </select>
-                    <button id="clear-alerts-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-trash mr-1"></i>Clear Alerts
+                    <button id="clear-alerts-btn" class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center justify-center enhanced-btn">
+                        <i class="fas fa-trash mr-2"></i>Clear Alerts
                     </button>
                 </div>
             </div>
 
             <!-- Main Timeframe Selector -->
-            <div class="mb-4">
-                <h3 class="text-lg font-semibold mb-2">Display Timeframe</h3>
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3 text-high-contrast flex items-center">
+                    <i class="fas fa-clock text-blue-300 mr-2"></i>Display Timeframe
+                </h3>
                 <div id="timeframe-selector" class="flex flex-wrap gap-2">
-                    <button class="timeframe-btn px-4 py-2 bg-gray-200 hover:bg-blue-500 hover:text-white rounded-lg transition-colors" data-tf="1m">1M</button>
-                    <button class="timeframe-btn px-4 py-2 bg-gray-200 hover:bg-blue-500 hover:text-white rounded-lg transition-colors" data-tf="5m">5M</button>
-                    <button class="timeframe-btn px-4 py-2 bg-gray-200 hover:bg-blue-500 hover:text-white rounded-lg transition-colors" data-tf="10m">10M</button>
-                    <button class="timeframe-btn px-4 py-2 bg-gray-200 hover:bg-blue-500 hover:text-white rounded-lg transition-colors" data-tf="15m">15M</button>
-                    <button class="timeframe-btn px-4 py-2 bg-gray-200 hover:bg-blue-500 hover:text-white rounded-lg transition-colors" data-tf="30m">30M</button>
-                    <button class="timeframe-btn px-4 py-2 bg-blue-500 text-white rounded-lg active" data-tf="1h">1H</button>
+                    <button class="timeframe-btn px-3 py-2 sm:px-4 glass-morphism text-high-contrast hover:bg-purple-500 rounded-lg transition-all duration-300 text-sm enhanced-btn" data-tf="1m">1M</button>
+                    <button class="timeframe-btn px-3 py-2 sm:px-4 glass-morphism text-high-contrast hover:bg-purple-500 rounded-lg transition-all duration-300 text-sm enhanced-btn" data-tf="5m">5M</button>
+                    <button class="timeframe-btn px-3 py-2 sm:px-4 glass-morphism text-high-contrast hover:bg-purple-500 rounded-lg transition-all duration-300 text-sm enhanced-btn" data-tf="10m">10M</button>
+                    <button class="timeframe-btn px-3 py-2 sm:px-4 glass-morphism text-high-contrast hover:bg-purple-500 rounded-lg transition-all duration-300 text-sm enhanced-btn" data-tf="15m">15M</button>
+                    <button class="timeframe-btn px-3 py-2 sm:px-4 glass-morphism text-high-contrast hover:bg-purple-500 rounded-lg transition-all duration-300 text-sm enhanced-btn" data-tf="30m">30M</button>
+                    <button class="timeframe-btn px-3 py-2 sm:px-4 btn-gradient text-white rounded-lg active text-sm" data-tf="1h">1H</button>
                 </div>
             </div>
 
             <!-- Multi-Timeframe Status -->
-            <div class="mb-4 bg-gray-50 p-4 rounded-lg">
-                <h3 class="text-lg font-semibold mb-3">Multi-Timeframe Analysis Status</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="mb-6 card-gradient p-4 rounded-xl">
+                <h3 class="text-lg font-semibold mb-4 text-high-contrast flex items-center">
+                    <i class="fas fa-layer-group text-purple-300 mr-2"></i>
+                    Multi-Timeframe Analysis Status
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                     <div class="text-center">
-                        <h4 class="font-medium text-sm mb-2">1 Minute</h4>
+                        <h4 class="font-medium text-xs sm:text-sm mb-2 text-high-contrast">1 Minute</h4>
                         <div class="space-y-1">
                             <div class="timeframe-status tf-loading" id="tf-1m-fast">Fast: --</div>
                             <div class="timeframe-status tf-loading" id="tf-1m-medium">Med: --</div>
@@ -145,7 +330,7 @@
                         </div>
                     </div>
                     <div class="text-center">
-                        <h4 class="font-medium text-sm mb-2">5 Minutes</h4>
+                        <h4 class="font-medium text-xs sm:text-sm mb-2 text-high-contrast">5 Minutes</h4>
                         <div class="space-y-1">
                             <div class="timeframe-status tf-loading" id="tf-5m-fast">Fast: --</div>
                             <div class="timeframe-status tf-loading" id="tf-5m-medium">Med: --</div>
@@ -154,7 +339,7 @@
                         </div>
                     </div>
                     <div class="text-center">
-                        <h4 class="font-medium text-sm mb-2">10 Minutes</h4>
+                        <h4 class="font-medium text-xs sm:text-sm mb-2 text-high-contrast">10 Minutes</h4>
                         <div class="space-y-1">
                             <div class="timeframe-status tf-loading" id="tf-10m-fast">Fast: --</div>
                             <div class="timeframe-status tf-loading" id="tf-10m-medium">Med: --</div>
@@ -163,7 +348,7 @@
                         </div>
                     </div>
                     <div class="text-center">
-                        <h4 class="font-medium text-sm mb-2">15 Minutes</h4>
+                        <h4 class="font-medium text-xs sm:text-sm mb-2 text-high-contrast">15 Minutes</h4>
                         <div class="space-y-1">
                             <div class="timeframe-status tf-loading" id="tf-15m-fast">Fast: --</div>
                             <div class="timeframe-status tf-loading" id="tf-15m-medium">Med: --</div>
@@ -172,7 +357,7 @@
                         </div>
                     </div>
                     <div class="text-center">
-                        <h4 class="font-medium text-sm mb-2">30 Minutes</h4>
+                        <h4 class="font-medium text-xs sm:text-sm mb-2 text-high-contrast">30 Minutes</h4>
                         <div class="space-y-1">
                             <div class="timeframe-status tf-loading" id="tf-30m-fast">Fast: --</div>
                             <div class="timeframe-status tf-loading" id="tf-30m-medium">Med: --</div>
@@ -181,7 +366,7 @@
                         </div>
                     </div>
                     <div class="text-center">
-                        <h4 class="font-medium text-sm mb-2">1 Hour</h4>
+                        <h4 class="font-medium text-xs sm:text-sm mb-2 text-high-contrast">1 Hour</h4>
                         <div class="space-y-1">
                             <div class="timeframe-status tf-loading" id="tf-1h-fast">Fast: --</div>
                             <div class="timeframe-status tf-loading" id="tf-1h-medium">Med: --</div>
@@ -193,44 +378,53 @@
             </div>
 
             <!-- Indicator Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-3">Stochastic Indicators</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <div class="card-gradient p-4 rounded-xl">
+                    <h3 class="text-lg font-semibold mb-3 text-high-contrast flex items-center">
+                        <i class="fas fa-wave-square text-green-300 mr-2"></i>
+                        Stochastic Indicators
+                    </h3>
                     <div class="space-y-2">
-                        <label class="flex items-center">
-                            <input type="checkbox" id="stoch-fast-10-3" checked class="mr-2">
-                            <span class="text-sm">Fast (10,3) - Red</span>
+                        <label class="flex items-center text-high-contrast cursor-pointer">
+                            <input type="checkbox" id="stoch-fast-10-1-3" checked class="mr-2 accent-purple-500">
+                            <span class="text-sm font-medium">Fast (10,1,3) - Red</span>
                         </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" id="stoch-medium-14-3" checked class="mr-2">
-                            <span class="text-sm">Medium (14,3) - Green</span>
+                        <label class="flex items-center text-high-contrast cursor-pointer">
+                            <input type="checkbox" id="stoch-medium-14-1-3" checked class="mr-2 accent-purple-500">
+                            <span class="text-sm font-medium">Medium (14,1,3) - Green</span>
                         </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" id="stoch-slow-40-4" checked class="mr-2">
-                            <span class="text-sm">Slow (40,4) - Blue</span>
+                        <label class="flex items-center text-high-contrast cursor-pointer">
+                            <input type="checkbox" id="stoch-slow-15-1-4" checked class="mr-2 accent-purple-500">
+                            <span class="text-sm font-medium">Slow (15,1,4) - Blue</span>
                         </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" id="stoch-full-60-3-1" checked class="mr-2">
-                            <span class="text-sm">Full (60,3,1) - Purple</span>
+                        <label class="flex items-center text-high-contrast cursor-pointer">
+                            <input type="checkbox" id="stoch-full-34-2-1" checked class="mr-2 accent-purple-500">
+                            <span class="text-sm font-medium">Full (34,2,1) - Purple</span>
                         </label>
                     </div>
                 </div>
                 
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-3">EMA Lines</h3>
+                <div class="card-gradient p-4 rounded-xl">
+                    <h3 class="text-lg font-semibold mb-3 text-high-contrast flex items-center">
+                        <i class="fas fa-chart-line text-orange-300 mr-2"></i>
+                        EMA Lines
+                    </h3>
                     <div class="flex flex-wrap gap-2">
-                        <button class="toggle-btn ema-btn px-3 py-1 bg-orange-500 text-white rounded active" data-ema="20">20 EMA</button>
-                        <button class="toggle-btn ema-btn px-3 py-1 bg-gray-300 rounded" data-ema="50">50 EMA</button>
-                        <button class="toggle-btn ema-btn px-3 py-1 bg-gray-300 rounded" data-ema="100">100 EMA</button>
-                        <button class="toggle-btn ema-btn px-3 py-1 bg-gray-300 rounded" data-ema="200">200 EMA</button>
+                        <button class="toggle-btn ema-btn px-3 py-1 bg-orange-500 text-white rounded-lg active transition-all duration-300 text-sm enhanced-btn" data-ema="20">20 EMA</button>
+                        <button class="toggle-btn ema-btn px-3 py-1 glass-morphism text-high-contrast rounded-lg transition-all duration-300 text-sm enhanced-btn" data-ema="50">50 EMA</button>
+                        <button class="toggle-btn ema-btn px-3 py-1 glass-morphism text-high-contrast rounded-lg transition-all duration-300 text-sm enhanced-btn" data-ema="100">100 EMA</button>
+                        <button class="toggle-btn ema-btn px-3 py-1 glass-morphism text-high-contrast rounded-lg transition-all duration-300 text-sm enhanced-btn" data-ema="200">200 EMA</button>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-3">Chart Type</h3>
+                <div class="card-gradient p-4 rounded-xl">
+                    <h3 class="text-lg font-semibold mb-3 text-high-contrast flex items-center">
+                        <i class="fas fa-chart-bar text-blue-300 mr-2"></i>
+                        Chart Type
+                    </h3>
                     <div class="flex gap-2">
-                        <button id="regular-candles" class="chart-type-btn px-3 py-1 bg-blue-500 text-white rounded active">Regular</button>
-                        <button id="heikin-ashi" class="chart-type-btn px-3 py-1 bg-gray-300 rounded">Heikin Ashi</button>
+                        <button id="regular-candles" class="chart-type-btn px-3 py-1 btn-gradient text-white rounded-lg active transition-all duration-300 text-sm">Regular</button>
+                        <button id="heikin-ashi" class="chart-type-btn px-3 py-1 glass-morphism text-high-contrast rounded-lg transition-all duration-300 text-sm enhanced-btn">Heikin Ashi</button>
                     </div>
                 </div>
             </div>
@@ -238,145 +432,134 @@
             <!-- Split Charts Container -->
             <div class="space-y-4 mb-6">
                 <!-- Price Chart -->
-                <div class="relative">
-                    <h3 class="text-lg font-semibold mb-2">Price Chart (Local Time)</h3>
-                    <div id="price-chart-container" class="w-full border rounded-lg" style="height: 400px;">
-                        <button id="restore-price-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all">
+                <div class="chart-container relative">
+                    <div class="chart-header">
+                        <h3 class="text-lg font-semibold text-card-contrast flex items-center">
+                            <i class="fas fa-chart-candlestick mr-2"></i>
+                            Price Chart (Local Time)
+                        </h3>
+                    </div>
+                    <div id="price-chart-container" class="w-full" style="height: 400px;">
+                        <button id="restore-price-chart-btn" class="absolute top-16 left-4 bg-white bg-opacity-95 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 shadow-lg text-card-contrast font-semibold">
                             <i class="fas fa-home mr-1"></i>Reset View
                         </button>
                     </div>
                 </div>
 
                 <!-- Stochastic Chart -->
-                <div class="relative">
-                    <h3 class="text-lg font-semibold mb-2">Stochastic Oscillator with Background Zones (Local Time)</h3>
-                    <div id="stochastic-chart-container" class="w-full border rounded-lg" style="height: 250px;">
-                        <button id="restore-stochastic-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all">
+                <div class="chart-container relative">
+                    <div class="chart-header">
+                        <h3 class="text-lg font-semibold text-card-contrast flex items-center">
+                            <i class="fas fa-wave-square mr-2"></i>
+                            Stochastic Oscillator (Local Time)
+                        </h3>
+                    </div>
+                    <div id="stochastic-chart-container" class="w-full" style="height: 280px;">
+                        <button id="restore-stochastic-chart-btn" class="absolute top-16 left-4 bg-white bg-opacity-95 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 shadow-lg text-card-contrast font-semibold">
                             <i class="fas fa-home mr-1"></i>Reset View
                         </button>
                     </div>
-                    <div id="stochastic-legend" class="stochastic-legend"></div>
                 </div>
             </div>
 
             <!-- Trading Signals Dashboard -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <!-- Confluence Signal Conditions -->
-                <div class="bg-white border rounded-lg p-4">
-                    <h3 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fas fa-layer-group text-purple-600 mr-2"></i>
+                <div class="card-gradient rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-high-contrast">
+                        <i class="fas fa-layer-group text-purple-300 mr-2"></i>
                         Confluence Trading Signals
                     </h3>
                     
                     <!-- Basic Signals -->
-                    <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-                        <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
+                    <div class="mb-4 p-3 bg-blue-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-blue-400 border-opacity-30">
+                        <h4 class="font-semibold text-high-contrast mb-2 flex items-center">
                             <i class="fas fa-signal mr-2"></i>Basic Signals
                         </h4>
                         <div class="space-y-1 text-sm">
-                            <div class="flex items-center" id="basic-long-condition">
+                            <div class="flex items-center text-high-contrast" id="basic-long-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span>Long: All bands ≤ 15 (oversold)</span>
+                                <span class="font-medium">Long: All bands ≤ 15 (oversold)</span>
                             </div>
-                            <div class="flex items-center" id="basic-short-condition">
+                            <div class="flex items-center text-high-contrast" id="basic-short-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span>Short: All bands ≥ 90 (overbought)</span>
+                                <span class="font-medium">Short: All bands ≥ 90 (overbought)</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Confluence Levels -->
                     <div class="space-y-3">
-                        <div class="p-3 bg-purple-50 rounded-lg">
-                            <h4 class="font-semibold text-purple-800 mb-2">Confluence Level 1 (1m + 5m)</h4>
-                            <div class="flex items-center" id="confluence-1-condition">
+                        <div class="p-3 bg-purple-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-purple-400 border-opacity-30">
+                            <h4 class="font-semibold text-high-contrast mb-2">Confluence Level 1 (1m + 5m)</h4>
+                            <div class="flex items-center text-high-contrast" id="confluence-1-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span class="text-sm">Both timeframes aligned</span>
+                                <span class="text-sm font-medium">Both timeframes aligned</span>
                             </div>
                         </div>
                         
-                        <div class="p-3 bg-purple-50 rounded-lg">
-                            <h4 class="font-semibold text-purple-800 mb-2">Confluence Level 2 (1m + 5m + 10m)</h4>
-                            <div class="flex items-center" id="confluence-2-condition">
+                        <div class="p-3 bg-purple-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-purple-400 border-opacity-30">
+                            <h4 class="font-semibold text-high-contrast mb-2">Confluence Level 2 (1m + 5m + 10m)</h4>
+                            <div class="flex items-center text-high-contrast" id="confluence-2-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span class="text-sm">Three timeframes aligned</span>
+                                <span class="text-sm font-medium">Three timeframes aligned</span>
                             </div>
                         </div>
                         
-                        <div class="p-3 bg-purple-50 rounded-lg">
-                            <h4 class="font-semibold text-purple-800 mb-2">Confluence Level 3 (1m + 5m + 10m + 15m)</h4>
-                            <div class="flex items-center" id="confluence-3-condition">
+                        <div class="p-3 bg-purple-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-purple-400 border-opacity-30">
+                            <h4 class="font-semibold text-high-contrast mb-2">Confluence Level 3 (1m + 5m + 10m + 15m)</h4>
+                            <div class="flex items-center text-high-contrast" id="confluence-3-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span class="text-sm">Four timeframes aligned</span>
+                                <span class="text-sm font-medium">Four timeframes aligned</span>
                             </div>
                         </div>
                         
-                        <div class="p-3 bg-purple-50 rounded-lg">
-                            <h4 class="font-semibold text-purple-800 mb-2">Confluence Level 4 (1m + 5m + 10m + 15m + 30m)</h4>
-                            <div class="flex items-center" id="confluence-4-condition">
+                        <div class="p-3 bg-purple-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-purple-400 border-opacity-30">
+                            <h4 class="font-semibold text-high-contrast mb-2">Confluence Level 4 (1m + 5m + 10m + 15m + 30m)</h4>
+                            <div class="flex items-center text-high-contrast" id="confluence-4-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span class="text-sm">Five timeframes aligned</span>
+                                <span class="text-sm font-medium">Five timeframes aligned</span>
                             </div>
                         </div>
                         
-                        <div class="p-3 bg-purple-50 rounded-lg">
-                            <h4 class="font-semibold text-purple-800 mb-2">Confluence Level 5 (All Timeframes)</h4>
-                            <div class="flex items-center" id="confluence-5-condition">
+                        <div class="p-3 bg-purple-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-purple-400 border-opacity-30">
+                            <h4 class="font-semibold text-high-contrast mb-2">Confluence Level 5 (All Timeframes)</h4>
+                            <div class="flex items-center text-high-contrast" id="confluence-5-condition">
                                 <i class="fas fa-circle text-gray-300 mr-2 condition-icon"></i>
-                                <span class="text-sm">All six timeframes aligned</span>
+                                <span class="text-sm font-medium">All six timeframes aligned</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Enhanced Alerts Panel -->
-                <div class="bg-white border rounded-lg p-4">
-                    <h3 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fas fa-bell text-red-600 mr-2"></i>
+                <div class="card-gradient rounded-xl p-4">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center text-high-contrast">
+                        <i class="fas fa-bell text-red-400 mr-2"></i>
                         Live Confluence Alerts
                         <span id="stored-alert-count" class="alert-badge alert-stored ml-2">0 Stored</span>
                     </h3>
                     <div id="alerts-container" class="alert-container space-y-2">
-                        <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                        <div class="p-3 bg-blue-500 bg-opacity-30 border-l-4 border-blue-400 rounded backdrop-filter backdrop-blur-lg">
                             <div class="flex items-center">
-                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                                <span class="text-sm">
-                                    [<span id="initial-timestamp"></span>] Multi-timeframe confluence system with alert storage initialized (Local Time)...
+                                <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                                <span class="text-sm alert-text">
+                                    [<span id="initial-timestamp"></span>] Enhanced multi-timeframe confluence system initialized (Local Time)...
                                 </span>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Current Confluence Status -->
-                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <h4 class="font-semibold mb-2">Current Status</h4>
-                        <div class="text-sm space-y-1">
-                            <div>Active Confluence Level: <span id="current-confluence-level" class="font-bold">0</span></div>
-                            <div>Last Signal: <span id="last-signal-type" class="font-bold">None</span></div>
-                            <div>Signal Strength: <span id="signal-strength" class="font-bold">Weak</span></div>
-                            <div>Alerts Stored: <span id="alert-count-display" class="font-bold">0/10</span></div>
+                    <div class="mt-4 p-3 bg-gray-500 bg-opacity-30 rounded-lg backdrop-filter backdrop-blur-lg border border-gray-400 border-opacity-30">
+                        <h4 class="font-semibold mb-2 text-high-contrast">Current Status</h4>
+                        <div class="text-sm space-y-1 text-high-contrast">
+                            <div>Active Confluence Level: <span id="current-confluence-level" class="font-bold text-yellow-300">0</span></div>
+                            <div>Last Signal: <span id="last-signal-type" class="font-bold text-yellow-300">None</span></div>
+                            <div>Signal Strength: <span id="signal-strength" class="font-bold text-yellow-300">Weak</span></div>
+                            <div>Alerts Stored: <span id="alert-count-display" class="font-bold text-yellow-300">0/10</span></div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Market Information -->
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Market Trend</h4>
-                    <div id="market-trend" class="text-lg">Analyzing...</div>
-                </div>
-                <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Confluence Level</h4>
-                    <div id="confluence-display" class="text-lg">0/5</div>
-                </div>
-                <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Signal Quality</h4>
-                    <div id="signal-quality" class="text-lg">Waiting...</div>
-                </div>
-                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-4 rounded-lg">
-                    <h4 class="font-semibold mb-2">Chart Type</h4>
-                    <div id="current-chart-type" class="text-lg">Regular</div>
                 </div>
             </div>
         </div>
@@ -393,6 +576,7 @@
         let updateInterval;
         let lastAlertTime = 0;
         let isHeikinAshi = false;
+        let isUpdating = false;
         
         // Multi-timeframe data storage
         let multitimeframeData = {
@@ -420,23 +604,32 @@
         let currentCandles = [];
         let currentHeikinAshi = [];
         
-        // Stochastic colors and labels
+        // Stochastic colors
         const stochColors = {
-            'fast': { color: '#EF4444', label: 'Fast (10,3)' },
-            'medium': { color: '#10B981', label: 'Medium (14,3)' },
-            'slow': { color: '#3B82F6', label: 'Slow (40,4)' },
-            'full': { color: '#8B5CF6', label: 'Full (60,3,1)' }
+            'fast': { color: '#EF4444', label: 'Fast (10,1,3)' },
+            'medium': { color: '#10B981', label: 'Medium (14,1,3)' },
+            'slow': { color: '#3B82F6', label: 'Slow (15,1,4)' },
+            'full': { color: '#8B5CF6', label: 'Full (34,2,1)' }
         };
 
-        // Timezone handling function
+        // Previous stochastic data for anti-flicker comparison
+        let previousStochasticData = {};
+
+        // Store current visible time ranges
+        let currentVisibleTimeRange = null;
+
+        function showUpdateIndicator() {
+            const indicator = document.getElementById('update-indicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1000);
+        }
+
         function convertToLocalTime(utcTimestamp) {
-            // The timestamp from Binance is already in UTC milliseconds
-            // Convert to local time by creating a new Date object
-            // The lightweight-charts library expects Unix timestamp in seconds
             return Math.floor(utcTimestamp / 1000);
         }
 
-        // Local Storage Functions
         function loadStoredAlerts() {
             try {
                 const stored = localStorage.getItem('cryptoAnalyzerAlerts');
@@ -452,9 +645,9 @@
         }
 
         function saveAlert(alert) {
-            alertHistory.unshift(alert); // Add to beginning
+            alertHistory.unshift(alert);
             if (alertHistory.length > 10) {
-                alertHistory = alertHistory.slice(0, 10); // Keep only last 10
+                alertHistory = alertHistory.slice(0, 10);
             }
             
             try {
@@ -470,7 +663,6 @@
             localStorage.removeItem('cryptoAnalyzerAlerts');
             updateAlertCount();
             
-            // Clear alert display except system message
             const alertsContainer = document.getElementById('alerts-container');
             while (alertsContainer.children.length > 1) {
                 alertsContainer.removeChild(alertsContainer.children[1]);
@@ -484,161 +676,185 @@
         }
 
         function displayStoredAlerts() {
-            // Display stored alerts in the UI (most recent first)
             alertHistory.forEach(alert => {
                 addAlertToUI(alert.message, alert.type, alert.signalType, alert.timestamp, true);
             });
         }
 
         function initCharts() {
+            if (isUpdating) return;
+            
             const priceContainer = document.getElementById('price-chart-container');
             const stochasticContainer = document.getElementById('stochastic-chart-container');
             
-            // Clear containers
-            priceContainer.innerHTML = '<button id="restore-price-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all"><i class="fas fa-home mr-1"></i>Reset View</button>';
-            stochasticContainer.innerHTML = '<button id="restore-stochastic-chart-btn" class="absolute top-2 left-2 bg-white bg-opacity-90 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all"><i class="fas fa-home mr-1"></i>Reset View</button>';
+            if (!priceChart) {
+                priceContainer.innerHTML = '<button id="restore-price-chart-btn" class="absolute top-16 left-4 bg-white bg-opacity-95 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 shadow-lg text-card-contrast font-semibold"><i class="fas fa-home mr-1"></i>Reset View</button>';
+                stochasticContainer.innerHTML = '<button id="restore-stochastic-chart-btn" class="absolute top-16 left-4 bg-white bg-opacity-95 hover:bg-opacity-100 px-3 py-1 rounded-lg text-sm z-10 transition-all duration-300 shadow-lg text-card-contrast font-semibold"><i class="fas fa-home mr-1"></i>Reset View</button>';
+            }
 
-            // Create price chart with local time configuration
-            priceChart = LightweightCharts.createChart(priceContainer, {
-                layout: {
-                    backgroundColor: '#ffffff',
-                    textColor: '#333',
-                },
-                grid: {
-                    vertLines: { color: '#f0f0f0' },
-                    horzLines: { color: '#f0f0f0' },
-                },
-                width: priceContainer.clientWidth,
-                height: priceContainer.clientHeight,
-                timeScale: {
-                    rightOffset: 0,
-                    barSpacing: 6,
-                    fixLeftEdge: false,
-                    fixRightEdge: true,
-                    lockVisibleTimeRangeOnResize: true,
-                    timeVisible: true,
-                    secondsVisible: true,
-                    shiftVisibleRangeOnNewBar: true
-                },
-                localization: {
-                    timeFormatter: (time) => {
-                        // Convert timestamp to local time string
-                        const date = new Date(time * 1000);
-                        return date.toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
-                    }
-                }
-            });
-
-            // Create stochastic chart with local time configuration
-            stochasticChart = LightweightCharts.createChart(stochasticContainer, {
-                layout: {
-                    backgroundColor: '#ffffff',
-                    textColor: '#333',
-                },
-                grid: {
-                    vertLines: { color: '#f0f0f0' },
-                    horzLines: { color: '#f0f0f0' },
-                },
-                width: stochasticContainer.clientWidth,
-                height: stochasticContainer.clientHeight,
-                rightPriceScale: {
-                    scaleMargins: {
-                        top: 0.1,
-                        bottom: 0.1,
+            if (!priceChart) {
+                priceChart = LightweightCharts.createChart(priceContainer, {
+                    layout: {
+                        backgroundColor: '#ffffff',
+                        textColor: '#1f2937',
+                        fontSize: 12,
+                        fontFamily: 'Inter, sans-serif'
                     },
-                    borderVisible: true,
-                },
-                timeScale: {
-                    rightOffset: 0,
-                    barSpacing: 6,
-                    fixLeftEdge: false,
-                    fixRightEdge: true,
-                    lockVisibleTimeRangeOnResize: true,
-                    timeVisible: true,
-                    secondsVisible: true,
-                    shiftVisibleRangeOnNewBar: true
-                },
-                localization: {
-                    timeFormatter: (time) => {
-                        // Convert timestamp to local time string
-                        const date = new Date(time * 1000);
-                        return date.toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
+                    grid: {
+                        vertLines: { color: '#e5e7eb' },
+                        horzLines: { color: '#e5e7eb' },
+                    },
+                    width: priceContainer.clientWidth,
+                    height: priceContainer.clientHeight,
+                    timeScale: {
+                        rightOffset: 0,
+                        barSpacing: 6,
+                        fixLeftEdge: false,
+                        fixRightEdge: true,
+                        lockVisibleTimeRangeOnResize: true,
+                        timeVisible: true,
+                        secondsVisible: true,
+                        shiftVisibleRangeOnNewBar: true
+                    },
+                    localization: {
+                        timeFormatter: (time) => {
+                            const date = new Date(time * 1000);
+                            return date.toLocaleString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour12: false
+                            });
+                        }
                     }
-                }
-            });
-
-            // Add price series to price chart
-            candleSeries = priceChart.addCandlestickSeries();
-            
-            // Add background areas to stochastic chart first (so they appear behind lines)
-            createStochasticBackgrounds();
-            
-            // Initialize stochastic series in stochastic chart
-            Object.keys(stochColors).forEach(key => {
-                stochasticSeries[key] = stochasticChart.addLineSeries({
-                    color: stochColors[key].color,
-                    lineWidth: 2
                 });
-            });
+            }
 
-            // Add reference lines for stochastic (90/15)
-            const upperLine = stochasticChart.addLineSeries({
-                color: '#FF0000',
-                lineWidth: 2,
-                lineStyle: 2,
-                title: 'Overbought (90)'
-            });
+            if (!stochasticChart) {
+                stochasticChart = LightweightCharts.createChart(stochasticContainer, {
+                    layout: {
+                        backgroundColor: '#ffffff',
+                        textColor: '#1f2937',
+                        fontSize: 12,
+                        fontFamily: 'Inter, sans-serif'
+                    },
+                    grid: {
+                        vertLines: { color: '#e5e7eb' },
+                        horzLines: { color: '#e5e7eb' },
+                    },
+                    width: stochasticContainer.clientWidth,
+                    height: stochasticContainer.clientHeight,
+                    rightPriceScale: {
+                        scaleMargins: {
+                            top: 0.1,
+                            bottom: 0.1,
+                        },
+                        borderVisible: false,
+                    },
+                    timeScale: {
+                        rightOffset: 0,
+                        barSpacing: 6,
+                        fixLeftEdge: false,
+                        fixRightEdge: true,
+                        lockVisibleTimeRangeOnResize: true,
+                        timeVisible: true,
+                        secondsVisible: true,
+                        shiftVisibleRangeOnNewBar: true
+                    },
+                    localization: {
+                        timeFormatter: (time) => {
+                            const date = new Date(time * 1000);
+                            return date.toLocaleString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour12: false
+                            });
+                        }
+                    }
+                });
+            }
+
+            if (!candleSeries) {
+                candleSeries = priceChart.addCandlestickSeries({
+                    upColor: '#10b981',
+                    downColor: '#ef4444',
+                    borderVisible: false,
+                    wickUpColor: '#10b981',
+                    wickDownColor: '#ef4444'
+                });
+            }
             
-            const lowerLine = stochasticChart.addLineSeries({
-                color: '#00FF00',
-                lineWidth: 2,
-                lineStyle: 2,
-                title: 'Oversold (15)'
-            });
+            if (Object.keys(backgroundSeries).length === 0) {
+                createStochasticBackgrounds();
+            }
+            
+            if (Object.keys(stochasticSeries).length === 0) {
+                Object.keys(stochColors).forEach(key => {
+                    stochasticSeries[key] = stochasticChart.addLineSeries({
+                        color: stochColors[key].color,
+                        lineWidth: 3,
+                        lineStyle: 0,
+                        priceLineVisible: false,
+                        lastValueVisible: false,
+                        crosshairMarkerVisible: false
+                    });
+                });
 
-            // Set reference line data using local time
-            const now = Math.floor(Date.now() / 1000);
-            const futureTime = now + 86400 * 30; // 30 days in future
-            upperLine.setData([
-                { time: now - 86400 * 30, value: 90 },
-                { time: futureTime, value: 90 }
-            ]);
-            lowerLine.setData([
-                { time: now - 86400 * 30, value: 15 },
-                { time: futureTime, value: 15 }
-            ]);
+                const upperLine = stochasticChart.addLineSeries({
+                    color: '#DC2626',
+                    lineWidth: 2,
+                    lineStyle: 2,
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                    crosshairMarkerVisible: false
+                });
+                
+                const lowerLine = stochasticChart.addLineSeries({
+                    color: '#059669',
+                    lineWidth: 2,
+                    lineStyle: 2,
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                    crosshairMarkerVisible: false
+                });
 
-            // Sync time scales
-            priceChart.timeScale().subscribeVisibleTimeRangeChange(() => {
-                const timeRange = priceChart.timeScale().getVisibleRange();
-                if (timeRange) {
-                    stochasticChart.timeScale().setVisibleRange(timeRange);
-                }
-            });
+                const now = Math.floor(Date.now() / 1000);
+                const pastTime = now - 86400 * 30;
+                const futureTime = now + 86400 * 30;
+                upperLine.setData([
+                    { time: pastTime, value: 90 },
+                    { time: futureTime, value: 90 }
+                ]);
+                lowerLine.setData([
+                    { time: pastTime, value: 15 },
+                    { time: futureTime, value: 15 }
+                ]);
+            }
 
-            stochasticChart.timeScale().subscribeVisibleTimeRangeChange(() => {
-                const timeRange = stochasticChart.timeScale().getVisibleRange();
-                if (timeRange) {
-                    priceChart.timeScale().setVisibleRange(timeRange);
-                }
-            });
+            if (priceChart && stochasticChart) {
+                priceChart.timeScale().subscribeVisibleTimeRangeChange(() => {
+                    const timeRange = priceChart.timeScale().getVisibleRange();
+                    if (timeRange && !isUpdating) {
+                        currentVisibleTimeRange = timeRange;
+                        stochasticChart.timeScale().setVisibleRange(timeRange);
+                    }
+                });
 
-            // Load stored alerts
+                stochasticChart.timeScale().subscribeVisibleTimeRangeChange(() => {
+                    const timeRange = stochasticChart.timeScale().getVisibleRange();
+                    if (timeRange && !isUpdating) {
+                        currentVisibleTimeRange = timeRange;
+                        priceChart.timeScale().setVisibleRange(timeRange);
+                    }
+                });
+            }
+
             loadStoredAlerts();
-            
             loadMultitimeframeData();
             setupAutoUpdate();
-            updateStochasticLegend();
             setupIndicatorControls();
             
             document.getElementById('restore-price-chart-btn').addEventListener('click', () => {
@@ -653,30 +869,34 @@
         }
         
         function createStochasticBackgrounds() {
-            // Create three area series for background colors
-            
-            // Overbought area (90-100) - Red background
             backgroundSeries.overbought = stochasticChart.addAreaSeries({
-                topColor: 'rgba(255, 0, 0, 0.1)',
-                bottomColor: 'rgba(255, 0, 0, 0.05)',
+                topColor: 'rgba(239, 68, 68, 0.15)',
+                bottomColor: 'rgba(239, 68, 68, 0.08)',
                 lineColor: 'transparent',
-                lineWidth: 0
+                lineWidth: 0,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                crosshairMarkerVisible: false
             });
             
-            // Neutral area (15-90) - Light gray background  
             backgroundSeries.neutral = stochasticChart.addAreaSeries({
-                topColor: 'rgba(128, 128, 128, 0.05)',
-                bottomColor: 'rgba(128, 128, 128, 0.02)',
+                topColor: 'rgba(156, 163, 175, 0.06)',
+                bottomColor: 'rgba(156, 163, 175, 0.03)',
                 lineColor: 'transparent',
-                lineWidth: 0
+                lineWidth: 0,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                crosshairMarkerVisible: false
             });
             
-            // Oversold area (0-15) - Green background
             backgroundSeries.oversold = stochasticChart.addAreaSeries({
-                topColor: 'rgba(0, 255, 0, 0.1)',
-                bottomColor: 'rgba(0, 255, 0, 0.05)',
+                topColor: 'rgba(16, 185, 129, 0.15)',
+                bottomColor: 'rgba(16, 185, 129, 0.08)',
                 lineColor: 'transparent',
-                lineWidth: 0
+                lineWidth: 0,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                crosshairMarkerVisible: false
             });
         }
         
@@ -687,53 +907,28 @@
             const pastTime = now - 86400 * 30;
             const futureTime = now + 86400 * 30;
             
-            // Set static background areas
-            backgroundSeries.overbought.setData([
-                { time: pastTime, value: 100 },
-                { time: futureTime, value: 90 }
-            ]);
+            if (backgroundSeries.overbought) {
+                backgroundSeries.overbought.setData([
+                    { time: pastTime, value: 100 },
+                    { time: futureTime, value: 90 }
+                ]);
+            }
             
-            backgroundSeries.neutral.setData([
-                { time: pastTime, value: 90 },
-                { time: futureTime, value: 15 }
-            ]);
+            if (backgroundSeries.neutral) {
+                backgroundSeries.neutral.setData([
+                    { time: pastTime, value: 90 },
+                    { time: futureTime, value: 15 }
+                ]);
+            }
             
-            backgroundSeries.oversold.setData([
-                { time: pastTime, value: 15 },
-                { time: futureTime, value: 0 }
-            ]);
-        }
-        
-        function updateStochasticLegend() {
-            const legend = document.getElementById('stochastic-legend');
-            legend.innerHTML = '<div style="margin-bottom: 5px; font-weight: bold;">Stochastic Indicators:</div>';
-            
-            Object.keys(stochasticSeries).forEach(key => {
-                if (stochasticSeries[key] && stochasticSeries[key].options().visible) {
-                    const item = document.createElement('div');
-                    item.className = 'stochastic-legend-item';
-                    item.innerHTML = `
-                        <span class="stochastic-legend-color" style="background:${stochColors[key].color}"></span>
-                        <span>${stochColors[key].label}</span>
-                    `;
-                    legend.appendChild(item);
-                }
-            });
-            
-            // Add background zone legend
-            const zoneInfo = document.createElement('div');
-            zoneInfo.innerHTML = `
-                <div style="margin-top: 8px; margin-bottom: 3px; font-weight: bold; font-size: 11px;">Background Zones:</div>
-                <div style="font-size: 10px;">
-                    <div style="margin: 2px 0;"><span style="background: rgba(255,0,0,0.2); padding: 1px 4px; margin-right: 4px;">&nbsp;</span>Overbought (≥90)</div>
-                    <div style="margin: 2px 0;"><span style="background: rgba(128,128,128,0.2); padding: 1px 4px; margin-right: 4px;">&nbsp;</span>Neutral (15-90)</div>
-                    <div style="margin: 2px 0;"><span style="background: rgba(0,255,0,0.2); padding: 1px 4px; margin-right: 4px;">&nbsp;</span>Oversold (≤15)</div>
-                </div>
-            `;
-            legend.appendChild(zoneInfo);
+            if (backgroundSeries.oversold) {
+                backgroundSeries.oversold.setData([
+                    { time: pastTime, value: 15 },
+                    { time: futureTime, value: 0 }
+                ]);
+            }
         }
 
-        // Heikin Ashi calculation
         function calculateHeikinAshi(candles) {
             const heikinAshi = [];
             
@@ -760,7 +955,7 @@
             return heikinAshi;
         }
 
-        function calculateStochastic(candles, kPeriod = 14, dPeriod = 3, smoothK = 1) {
+        function calculateStochastic(candles, kPeriod = 14, smoothK = 1, dPeriod = 3) {
             const result = [];
             const kValues = [];
             const smoothedKValues = [];
@@ -793,10 +988,12 @@
                     }
                 }
                 
-                smoothedKValues.push(smoothedK);
+                if (smoothedK !== null) {
+                    smoothedKValues.push(smoothedK);
+                }
 
                 let d = null;
-                if (smoothedKValues.length >= dPeriod) {
+                if (smoothedKValues.length >= dPeriod && smoothedK !== null) {
                     const dSlice = smoothedKValues.slice(-dPeriod);
                     d = dSlice.reduce((sum, val) => sum + val, 0) / dPeriod;
                 }
@@ -833,26 +1030,43 @@
             return ema;
         }
 
+        // Anti-flicker stochastic data comparison
+        function hasStochasticChanged(timeframe, newData) {
+            const prevKey = `${currentSymbol}_${timeframe}`;
+            const prevData = previousStochasticData[prevKey];
+            
+            if (!prevData) {
+                previousStochasticData[prevKey] = JSON.stringify(newData);
+                return true;
+            }
+            
+            const newDataString = JSON.stringify(newData);
+            if (prevData !== newDataString) {
+                previousStochasticData[prevKey] = newDataString;
+                return true;
+            }
+            
+            return false;
+        }
+
         async function loadTimeframeData(timeframe) {
             try {
                 let candles;
                 let stochastics;
 
                 if (timeframe === '10m') {
-                    // Fetch 5m data and aggregate to 10m
-                    const limit = 400; // Fetch more 5m candles to aggregate into ~200 10m candles
+                    const limit = 400;
                     const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=5m&limit=${limit}`);
                     const data = await response.json();
 
-                    // Aggregate 5m candles into 10m candles
                     candles = [];
                     for (let i = 0; i < data.length - 1; i += 2) {
                         const candle1 = data[i];
                         const candle2 = data[i + 1];
-                        if (!candle2) break; // Ensure we have a pair
+                        if (!candle2) break;
 
                         candles.push({
-                            time: convertToLocalTime(candle1[0]), // Convert to local time
+                            time: convertToLocalTime(candle1[0]),
                             open: parseFloat(candle1[1]),
                             high: Math.max(parseFloat(candle1[2]), parseFloat(candle2[2])),
                             low: Math.min(parseFloat(candle1[3]), parseFloat(candle2[3])),
@@ -861,13 +1075,12 @@
                         });
                     }
                 } else {
-                    // Standard timeframe fetching
                     const limit = ['1m', '5m'].includes(timeframe) ? 200 : 150;
                     const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${timeframe}&limit=${limit}`);
                     const data = await response.json();
 
                     candles = data.map(d => ({
-                        time: convertToLocalTime(d[0]), // Convert to local time
+                        time: convertToLocalTime(d[0]),
                         open: parseFloat(d[1]),
                         high: parseFloat(d[2]),
                         low: parseFloat(d[3]),
@@ -876,12 +1089,11 @@
                     }));
                 }
 
-                // Calculate all stochastics for this timeframe
                 stochastics = {
-                    fast: calculateStochastic(candles, 10, 3),
-                    medium: calculateStochastic(candles, 14, 3),
-                    slow: calculateStochastic(candles, 40, 4),
-                    full: calculateStochastic(candles, 60, 3, 1)
+                    fast: calculateStochastic(candles, 10, 1, 3),
+                    medium: calculateStochastic(candles, 14, 1, 3),
+                    slow: calculateStochastic(candles, 15, 1, 4),
+                    full: calculateStochastic(candles, 34, 2, 1)
                 };
 
                 multitimeframeData[timeframe] = {
@@ -904,19 +1116,15 @@
             const keys = ['fast', 'medium', 'slow', 'full'];
             const latest = {};
             
-            // Get latest values for all stochastics
             keys.forEach(key => {
                 const stochData = stochastics[key];
                 latest[key] = stochData.length > 0 ? stochData[stochData.length - 1].d : null;
             });
             
-            // Check if all are valid numbers
             const allValid = Object.values(latest).every(val => val !== null && !isNaN(val));
             if (!allValid) return;
             
-            // Check for oversold condition (all <= 15)
             const allOversold = Object.values(latest).every(val => val <= 15);
-            // Check for overbought condition (all >= 90)  
             const allOverbought = Object.values(latest).every(val => val >= 90);
             
             const alertKey = `${currentSymbol}_${timeframe}`;
@@ -933,7 +1141,7 @@
                 const message = `🔴 ${timeframe.toUpperCase()} OVERBOUGHT ALERT: All stochastics ≥90 (${valuesStr}) - Potential SHORT setup for ${currentSymbol}`;
                 addAlert(message, 'bearish', 'timeframe');
             } else if (!allOversold && !allOverbought && previousState) {
-                timeframeAlertStates[alertKey] = null; // Reset state when exiting extreme zones
+                timeframeAlertStates[alertKey] = null;
             }
         }
         
@@ -947,7 +1155,6 @@
                         const roundedValue = Math.round(latestValue);
                         element.textContent = `${key === 'medium' ? 'Med' : key.charAt(0).toUpperCase() + key.slice(1)}: ${roundedValue}`;
                         
-                        // Update styling based on value
                         element.className = 'timeframe-status';
                         if (roundedValue <= 15) {
                             element.classList.add('tf-oversold');
@@ -962,41 +1169,57 @@
         }
         
         async function loadMultitimeframeData() {
+            if (isUpdating) return;
+            isUpdating = true;
+            
+            showUpdateIndicator();
             const timeframes = ['1m', '5m', '10m', '15m', '30m', '1h'];
             
-            // Load all timeframes in parallel
-            const promises = timeframes.map(tf => loadTimeframeData(tf));
-            await Promise.all(promises);
-            
-            // Load display data for current timeframe
-            const displayData = multitimeframeData[currentTimeframe];
-            if (displayData && displayData.candles) {
-                currentCandles = displayData.candles;
-                currentHeikinAshi = calculateHeikinAshi(currentCandles);
+            try {
+                // Store current visible range before updating
+                const currentVisibleRange = priceChart.timeScale().getVisibleRange();
                 
-                // Set chart data
-                const chartData = isHeikinAshi ? currentHeikinAshi : currentCandles;
-                candleSeries.setData(chartData);
+                const promises = timeframes.map(tf => loadTimeframeData(tf));
+                await Promise.all(promises);
                 
-                // Update stochastic display
-                Object.keys(stochasticSeries).forEach(key => {
-                    if (displayData.stochastics[key]) {
-                        const data = displayData.stochastics[key]
-                            .filter(d => d.d !== null)
-                            .map(d => ({ time: d.time, value: d.d }));
-                        stochasticSeries[key].setData(data);
+                const displayData = multitimeframeData[currentTimeframe];
+                if (displayData && displayData.candles) {
+                    currentCandles = displayData.candles;
+                    currentHeikinAshi = calculateHeikinAshi(currentCandles);
+                    
+                    const chartData = isHeikinAshi ? currentHeikinAshi : currentCandles;
+                    if (candleSeries) {
+                        candleSeries.setData(chartData);
                     }
-                });
+                    
+                    // Anti-flicker stochastic update - only update if data actually changed
+                    if (hasStochasticChanged(currentTimeframe, displayData.stochastics)) {
+                        Object.keys(stochasticSeries).forEach(key => {
+                            if (displayData.stochastics[key] && stochasticSeries[key]) {
+                                const data = displayData.stochastics[key]
+                                    .filter(d => d.d !== null)
+                                    .map(d => ({ time: d.time, value: d.d }));
+                                stochasticSeries[key].setData(data);
+                            }
+                        });
+                        
+                        updateStochasticBackgrounds(displayData.stochastics.medium);
+                    }
+                    
+                    updateEMAs();
+                }
                 
-                // Update background areas
-                updateStochasticBackgrounds(displayData.stochastics.medium);
+                // Restore the visible range after updating data
+                if (currentVisibleRange) {
+                    priceChart.timeScale().setVisibleRange(currentVisibleRange);
+                    stochasticChart.timeScale().setVisibleRange(currentVisibleRange);
+                }
                 
-                // Calculate and display EMAs
-                updateEMAs();
+                analyzeConfluence();
+                
+            } finally {
+                isUpdating = false;
             }
-            
-            // Run confluence analysis
-            analyzeConfluence();
         }
         
         function updateEMAs() {
@@ -1031,7 +1254,7 @@
         
         function addAlert(message, type, signalType = '') {
             const now = Date.now();
-            if (now - lastAlertTime < 5000 && type !== 'info') return; // 5 second cooldown
+            if (now - lastAlertTime < 3000 && type !== 'info') return;
             
             lastAlertTime = now;
             
@@ -1044,10 +1267,7 @@
                 time: now
             };
             
-            // Save to localStorage
             saveAlert(alert);
-            
-            // Add to UI
             addAlertToUI(message, type, signalType, alert.timestamp, false);
         }
         
@@ -1055,7 +1275,7 @@
             const alertsContainer = document.getElementById('alerts-container');
             const alertDiv = document.createElement('div');
             
-            let alertClass = 'p-3 rounded border-l-4 ';
+            let alertClass = 'p-3 rounded border-l-4 backdrop-filter backdrop-blur-lg ';
             let iconClass = 'fas fa-info-circle ';
             
             switch(type) {
@@ -1067,7 +1287,7 @@
                     } else {
                         alertClass += 'long-signal';
                     }
-                    iconClass = 'fas fa-arrow-up text-green-500 ';
+                    iconClass = 'fas fa-arrow-up text-green-400 ';
                     break;
                 case 'bearish':
                     if (signalType === 'confluence') {
@@ -1077,11 +1297,11 @@
                     } else {
                         alertClass += 'short-signal';
                     }
-                    iconClass = 'fas fa-arrow-down text-red-500 ';
+                    iconClass = 'fas fa-arrow-down text-red-400 ';
                     break;
                 default:
-                    alertClass += 'bg-blue-50 border-blue-500';
-                    iconClass = 'fas fa-info-circle text-blue-500 ';
+                    alertClass += 'bg-blue-500 bg-opacity-30 border-blue-400';
+                    iconClass = 'fas fa-info-circle text-blue-400 ';
             }
             
             alertDiv.className = alertClass;
@@ -1092,7 +1312,7 @@
             alertDiv.innerHTML = `
                 <div class="flex items-center">
                     <i class="${iconClass}mr-2"></i>
-                    <span class="text-sm font-medium">
+                    <span class="text-sm font-semibold alert-text">
                         [${timestamp}] ${message}
                     </span>
                     <span class="alert-badge ${badgeClass}">${badgeText}</span>
@@ -1101,7 +1321,6 @@
             
             alertsContainer.insertBefore(alertDiv, alertsContainer.children[1]);
             
-            // Keep only the last 20 alerts in UI
             while (alertsContainer.children.length > 21) {
                 alertsContainer.removeChild(alertsContainer.lastChild);
             }
@@ -1113,7 +1332,7 @@
             
             const icon = element.querySelector('.condition-icon');
             if (isActive) {
-                icon.className = 'fas fa-check-circle text-green-500 mr-2 condition-icon signal-indicator';
+                icon.className = 'fas fa-check-circle text-green-400 mr-2 condition-icon signal-indicator';
             } else {
                 icon.className = 'fas fa-circle text-gray-300 mr-2 condition-icon';
             }
@@ -1149,7 +1368,6 @@
                 ['1m', '5m', '10m', '15m', '30m', '1h']
             ];
             
-            // Check basic conditions (current timeframe)
             const currentCondition = checkTimeframeCondition(currentTimeframe);
             updateConditionStatus('basic-long-condition', currentCondition.oversold);
             updateConditionStatus('basic-short-condition', currentCondition.overbought);
@@ -1157,7 +1375,6 @@
             let maxConfluenceLevel = 0;
             let confluenceType = 'none';
             
-            // Check each confluence level
             confluenceGroups.forEach((group, index) => {
                 const level = index + 1;
                 
@@ -1174,7 +1391,6 @@
                     maxConfluenceLevel = level;
                     confluenceType = isOversoldConfluence ? 'long' : 'short';
                     
-                    // Generate alert for confluence
                     const direction = isOversoldConfluence ? 'LONG' : 'SHORT';
                     const condition = isOversoldConfluence ? 'oversold (≤15)' : 'overbought (≥90)';
                     addAlert(
@@ -1185,84 +1401,56 @@
                 }
             });
             
-            // Update status displays
             document.getElementById('current-confluence-level').textContent = maxConfluenceLevel;
-            document.getElementById('confluence-display').textContent = `${maxConfluenceLevel}/5`;
             document.getElementById('last-signal-type').textContent = confluenceType === 'none' ? 'None' : confluenceType.toUpperCase();
             
-            // Update signal quality
             let quality = 'Weak';
             if (maxConfluenceLevel >= 4) quality = 'Very Strong';
             else if (maxConfluenceLevel >= 3) quality = 'Strong';
             else if (maxConfluenceLevel >= 2) quality = 'Moderate';
             else if (maxConfluenceLevel >= 1) quality = 'Fair';
             
-            document.getElementById('signal-quality').textContent = quality;
             document.getElementById('signal-strength').textContent = quality;
         }
         
-        function analyzeMarketTrend() {
-            if (!emaSeries['200'] || currentCandles.length < 50) return;
-            
-            const latestPrice = currentCandles[currentCandles.length - 1].close;
-            // Get EMA values manually from calculated data
-            const ema200Data = calculateEMA(currentCandles, 200);
-            const ema200 = ema200Data[ema200Data.length - 1]?.value;
-            
-            let trend = "Neutral";
-            if (ema200 && latestPrice > ema200) {
-                trend = "Uptrend";
-            } else if (ema200 && latestPrice < ema200) {
-                trend = "Downtrend";
-            }
-            
-            document.getElementById('market-trend').textContent = trend;
-        }
-        
         function setupIndicatorControls() {
-            // Stochastic toggles
-            ['fast-10-3', 'medium-14-3', 'slow-40-4', 'full-60-3-1'].forEach(id => {
+            ['fast-10-1-3', 'medium-14-1-3', 'slow-15-1-4', 'full-34-2-1'].forEach(id => {
                 document.getElementById(`stoch-${id}`).addEventListener('change', function() {
-                    const key = id.replace('stoch-', '').replace('-10-3', '').replace('-14-3', '').replace('-40-4', '').replace('-60-3-1', '');
                     let actualKey;
-                    if (id.includes('10-3')) actualKey = 'fast';
-                    else if (id.includes('14-3')) actualKey = 'medium';
-                    else if (id.includes('40-4')) actualKey = 'slow';
-                    else if (id.includes('60-3-1')) actualKey = 'full';
+                    if (id.includes('10-1-3')) actualKey = 'fast';
+                    else if (id.includes('14-1-3')) actualKey = 'medium';
+                    else if (id.includes('15-1-4')) actualKey = 'slow';
+                    else if (id.includes('34-2-1')) actualKey = 'full';
                     
                     if (stochasticSeries[actualKey]) {
                         stochasticSeries[actualKey].applyOptions({ visible: this.checked });
-                        updateStochasticLegend();
                     }
                 });
             });
             
-            // EMA toggles
             document.querySelectorAll('.ema-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     this.classList.toggle('active');
                     if (this.classList.contains('active')) {
-                        this.classList.remove('bg-gray-300');
-                        this.classList.add('bg-blue-500', 'text-white');
+                        this.classList.remove('glass-morphism');
+                        this.classList.add('btn-gradient');
                     } else {
-                        this.classList.remove('bg-blue-500', 'text-white');
-                        this.classList.add('bg-gray-300');
+                        this.classList.remove('btn-gradient');
+                        this.classList.add('glass-morphism');
                     }
                     updateEMAs();
                 });
             });
 
-            // Chart type toggles
             document.getElementById('regular-candles').addEventListener('click', function() {
                 if (!this.classList.contains('active')) {
                     isHeikinAshi = false;
-                    this.classList.add('active', 'bg-blue-500', 'text-white');
-                    this.classList.remove('bg-gray-300');
-                    document.getElementById('heikin-ashi').classList.remove('active', 'bg-blue-500', 'text-white');
-                    document.getElementById('heikin-ashi').classList.add('bg-gray-300');
-                    document.getElementById('current-chart-type').textContent = 'Regular';
+                    this.classList.add('active', 'btn-gradient');
+                    this.classList.remove('glass-morphism');
+                    document.getElementById('heikin-ashi').classList.remove('active', 'btn-gradient');
+                    document.getElementById('heikin-ashi').classList.add('glass-morphism');
                     
-                    if (currentCandles.length > 0) {
+                    if (currentCandles.length > 0 && candleSeries) {
                         candleSeries.setData(currentCandles);
                     }
                 }
@@ -1271,19 +1459,17 @@
             document.getElementById('heikin-ashi').addEventListener('click', function() {
                 if (!this.classList.contains('active')) {
                     isHeikinAshi = true;
-                    this.classList.add('active', 'bg-blue-500', 'text-white');
-                    this.classList.remove('bg-gray-300');
-                    document.getElementById('regular-candles').classList.remove('active', 'bg-blue-500', 'text-white');
-                    document.getElementById('regular-candles').classList.add('bg-gray-300');
-                    document.getElementById('current-chart-type').textContent = 'Heikin Ashi';
+                    this.classList.add('active', 'btn-gradient');
+                    this.classList.remove('glass-morphism');
+                    document.getElementById('regular-candles').classList.remove('active', 'btn-gradient');
+                    document.getElementById('regular-candles').classList.add('glass-morphism');
                     
-                    if (currentHeikinAshi.length > 0) {
+                    if (currentHeikinAshi.length > 0 && candleSeries) {
                         candleSeries.setData(currentHeikinAshi);
                     }
                 }
             });
 
-            // Clear alerts button
             document.getElementById('clear-alerts-btn').addEventListener('click', function() {
                 if (confirm('Are you sure you want to clear all stored alerts?')) {
                     clearStoredAlerts();
@@ -1294,44 +1480,61 @@
         function setupAutoUpdate() {
             if (updateInterval) clearInterval(updateInterval);
             
-            // Update every 30 seconds for 1m/5m/10m, 60 seconds for others
-            const frequency = ['1m', '5m', '10m'].includes(currentTimeframe) ? 30000 : 60000;
-            
             updateInterval = setInterval(() => {
-                loadMultitimeframeData();
-                analyzeMarketTrend();
-            }, frequency);
+                if (!isUpdating) {
+                    loadMultitimeframeData();
+                }
+            }, 3000);
         }
 
-        // Event listeners
         document.querySelectorAll('.timeframe-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.timeframe-btn').forEach(b => {
-                    b.classList.remove('active', 'bg-blue-500', 'text-white');
-                    b.classList.add('bg-gray-200', 'hover:bg-blue-500', 'hover:text-white');
+                    b.classList.remove('active', 'btn-gradient');
+                    b.classList.add('glass-morphism');
                 });
-                this.classList.add('active', 'bg-blue-500', 'text-white');
-                this.classList.remove('bg-gray-200', 'hover:bg-blue-500', 'hover:text-white');
+                this.classList.add('active', 'btn-gradient');
+                this.classList.remove('glass-morphism');
                 currentTimeframe = this.dataset.tf;
-                loadMultitimeframeData(); // Reload with new display timeframe
+                loadMultitimeframeData();
             });
         });
 
         document.getElementById('crypto-selector').addEventListener('change', function() {
             currentSymbol = this.value;
-            // Reset timeframe alert states for new symbol
             timeframeAlertStates = {};
+            previousStochasticData = {}; // Reset anti-flicker data
+            
+            if (priceChart) {
+                priceChart.remove();
+                priceChart = null;
+            }
+            if (stochasticChart) {
+                stochasticChart.remove();
+                stochasticChart = null;
+            }
+            
+            candleSeries = null;
+            stochasticSeries = {};
+            backgroundSeries = {};
+            emaSeries = {
+                '20': null,
+                '50': null,
+                '100': null,
+                '200': null
+            };
+            
             initCharts();
         });
 
         window.addEventListener('resize', function() {
-            if (priceChart) {
+            if (priceChart && !isUpdating) {
                 priceChart.applyOptions({ 
                     width: document.getElementById('price-chart-container').clientWidth,
                     height: document.getElementById('price-chart-container').clientHeight
                 });
             }
-            if (stochasticChart) {
+            if (stochasticChart && !isUpdating) {
                 stochasticChart.applyOptions({ 
                     width: document.getElementById('stochastic-chart-container').clientWidth,
                     height: document.getElementById('stochastic-chart-container').clientHeight
@@ -1339,7 +1542,6 @@
             }
         });
 
-        // Initialize
         initCharts();
     </script>
 </body>
